@@ -1,9 +1,9 @@
-
 import math
 from math import sqrt
 import random
+import MillerRabin
 class ElGamal():
-    def fpa_2(self,x,e,m):
+    def fpa(self,x,e,m):
         y=int(1)
         while e!=0:
             if e%2==0:
@@ -42,7 +42,7 @@ class ElGamal():
         print(f'Compute {b_inverse}^{m} in {p}')
         print('x\te\ty')
         print(f'{b_inverse}\t{m}\t{1}')
-        c=self.fpa_2(self,b_inverse,m,p)
+        c=self.fpa(self,b_inverse,m,p)
         print(f'So {b_inverse}^{m} in {p} = {c}')
         x=a
         for i in range(0,m):
@@ -64,7 +64,7 @@ class ElGamal():
         for b in range(2,p):
             flag=True
             for divisor in q:
-                if 1 == self.fpa_2(self,b,(p-1)/divisor,p):
+                if 1 == self.fpa(self,b,(p-1)/divisor,p):
                     flag=False
                     break
             if flag:
@@ -72,19 +72,14 @@ class ElGamal():
                 break
         return root_set
     
-    def fpa(self,x,e,m):
-        print('x\te\ty')
-        print(f'{x}\t{e}\t{1}')
-        y=int(1)
-        while e!=0:
-            if e%2==0:
-                x=int((x*x)%m)
-                e=int(e/2)
-            else:
-                e=int(e-1)
-                y=int((x*y)%m)
-            print(f'{x}\t{e}\t{y}')
-        return y
+    def fpa(self,p, q, n):
+        res = 1
+        while q :
+            if q & 1:
+                res = (res * p) % n
+            q >>= 1
+            p = (p * p) % n
+        return res
     
     def extended_gcd(self,a, b):
         if a == 0:
@@ -97,12 +92,14 @@ class ElGamal():
             print(f'{gcd}={y - (b // a) * x}*{a}+{x}*{b}')
             return gcd, y - (b // a) * x, x
     
-    def AliceGenerateKey(self,Zp):
-        self.Zp=Zp
+    def AliceGenerateKey(self,bit=7):
+        self.Zp=MillerRabin.largePrime_Generate(bit)
+        print(f"Zp is {self.Zp}")
         root_set=self.primitive_root_search(self,self.Zp)
         self.g=root_set[random.randint(0,len(root_set)-1)]
         print(f"Choose {self.g} as generate root,",end=' ')
         self.x=random.randint(0,self.Zp-1)
+        print(f'x:{self.x}')
         print(f'{self.x} as Alice\'s private key.')
         print(f'g^x:')
         self.gx=self.fpa(self,self.g,self.x,self.Zp)
@@ -114,18 +111,25 @@ class ElGamal():
         self.gx=gx
         self.y=random.randint(0,self.Zp-1)
         print(f'g^y:')
+        print(f'y:{self.y}')
         self.gy=self.fpa(self,self.g,self.y,self.Zp)
         print(f'So public key of Bob is (g^y={self.gy})')
     
-    def AliceSendMessage(self,message):
+    def AliceSendMessage(self,message,gy,x,zp):
         print("get (g^y)^x")
+        self.gy=gy
+        self.x=x
+        self.Zp=zp
         p=self.fpa(self,self.gy,self.x,self.Zp)
         print(f"(g^y)^x={p}")
         self.encryptedMessage=(message*p)%self.Zp
         print(f"encrypt message={(message*p)%self.Zp}")
     
-    def BobRecieveMessage(self,encryptedMessage):
+    def BobRecieveMessage(self,encryptedMessage,y,gx,zp):
         print("get (g^x)^y")
+        self.y=y
+        self.Zp=zp
+        self.gx=gx
         p=self.fpa(self,self.gx,self.y,self.Zp)
         print(f"(g^x)^y={p}")
         print("get ((g^x)^y)^-1")
@@ -153,8 +157,8 @@ class ElGamal():
 
         
 El=ElGamal
-El.AliceGenerateKey(El,101)
-El.BobGenerateKey(El,El.g,El.Zp,El.gx)
-El.AliceSendMessage(El,77)
-El.BobRecieveMessage(El,El.encryptedMessage)
-El.Eve(El,El.encryptedMessage,El.g,El.Zp,El.gx,El.gy)
+# El.AliceGenerateKey(El,24)
+# El.BobGenerateKey(El,g=6353629,Zp=16300051,gx=1183985)
+# El.AliceSendMessage(El,message=12101171,gy=1776114,x=5157202,zp=16300051)
+# El.BobRecieveMessage(El,encryptedMessage=5638781,y=10117718,gx=1183985,zp=16300051)
+El.Eve(El,encryptedMessage=8047593,g=7461015,Zp=10120921,gx=6092743,gy=7868224)
